@@ -4,8 +4,11 @@ import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.EditText;
 
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
@@ -20,6 +23,9 @@ public class MainActivity extends AppCompatActivity {
 
     // Views
     private CoordinatorLayout mCoordinatorLayout;
+    private RecyclerView mRecyclerView;
+    private EditText mMessageEditText;
+    private Button mSendMessageButton;
 
     // Internal variables
     private Pubnub mPubNub;
@@ -33,6 +39,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Link the views
         mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.main_coordinator_layout);
+        mRecyclerView = (RecyclerView) findViewById(R.id.messages_list_recycler_view);
+        mMessageEditText = (EditText) findViewById(R.id.message_edit_text);
+        mSendMessageButton = (Button) findViewById(R.id.send_message_button);
 
         // Internal variables
         mPubNub = new Pubnub(APIKeys.PUBNUB_PUBLISH_KEY, APIKeys.PUBNUB_SUBSCRIBE_KEY);
