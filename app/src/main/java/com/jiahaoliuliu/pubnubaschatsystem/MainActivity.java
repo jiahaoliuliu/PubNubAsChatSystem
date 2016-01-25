@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
             mPubNub.subscribe(DEFAULT_CHANNEL_NAME, new Callback() {
                 @Override
                 public void successCallback(String channel, Object message) {
-                    Log.v(TAG, "Success callback");
+                    Log.v(TAG, "Message received from channel " + channel + ": " + message);
                 }
 
                 @Override
