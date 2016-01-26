@@ -32,6 +32,7 @@ public class RegistrationIntentService extends IntentService {
     @SuppressLint("LongLogTag")
     @Override
     protected void onHandleIntent(Intent intent) {
+        Log.v(TAG, "Starting the registration intent service");
         // Get the result receiver
         Bundle extras = intent.getExtras();
         if (extras != null && extras.containsKey(INTENT_KEY_UPDATE_SERVER_TOKEN_CALLBACK)) {

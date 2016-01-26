@@ -5,11 +5,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Special permission for GCM -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
 
     <!-- Spercial permission for GCM -->
     <permission android:name="com.jiahaoliuliu.pubnubaschatsystem.permission.C2D_MESSAGE"
         android:protectionLevel="signature" />
     <uses-permission android:name="com.jiahaoliuliu.pubnubaschatsystem.permission.C2D_MESSAGE" />
+
 
     <application
         android:allowBackup="true"
@@ -49,6 +51,11 @@
             <intent-filter>
                 <action android:name="com.google.android.gms.iid.InstanceID" />
             </intent-filter>
+        </service>
+
+        <service
+            android:name=".RegistrationIntentService"
+            android:exported="false" >
         </service>
     </application>
 </manifest>

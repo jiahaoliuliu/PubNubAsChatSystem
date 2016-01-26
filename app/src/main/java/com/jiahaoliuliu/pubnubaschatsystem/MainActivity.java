@@ -1,7 +1,9 @@
 package com.jiahaoliuliu.pubnubaschatsystem;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.ResultReceiver;
 import android.provider.Settings;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
@@ -20,9 +22,6 @@ import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
 import com.pubnub.api.PubnubError;
 import com.pubnub.api.PubnubException;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * @author <a href="mailto:jiahaoliuliu@gmail.com">Jiahao Liu Liu</a>
@@ -70,6 +69,39 @@ public class MainActivity extends AppCompatActivity {
         //      Specify an adapter
         mMessagesListAdapter = new MessagesListAdapter(mDeviceId);
         mMessagesListRecyclerView.setAdapter(mMessagesListAdapter);
+
+        // Trying to enable the gcm token for the default channel
+        // Ask the gcm server for the token
+        Intent startRegistrationIntentServiceIntent = new Intent(mContext, RegistrationIntentService.class);
+        startRegistrationIntentServiceIntent.putExtra(
+                RegistrationIntentService.INTENT_KEY_UPDATE_SERVER_TOKEN_CALLBACK, new ResultReceiver(null) {
+                    @Override
+                    protected void onReceiveResult(int resultCode, Bundle resultData) {
+                        if (resultData == null) {
+                            Log.e(TAG, "Error getting gcm tokens. The result data is null");
+                            return;
+                        }
+                        String gcmToken = resultData.getString(RegistrationIntentService.BUNDLE_KEY_GCM_TOKEN);
+                        Log.v(TAG, "Token received " + gcmToken);
+
+                        mPubNub.enablePushNotificationsOnChannel(DEFAULT_CHANNEL_NAME, gcmToken, new Callback() {
+                            @Override
+                            public void successCallback(String channel, Object message) {
+                                Log.v(TAG, "GCM token correctly registered with the channel");
+                            }
+
+                            @Override
+                            public void errorCallback(String channel, PubnubError error) {
+                                Log.e(TAG, "Error registering the gcm token with the channel(" + error.errorCode + "):" +
+                                    error.getErrorString());
+                            }
+                        });
+
+                    }
+                });
+
+        mContext.startService(startRegistrationIntentServiceIntent);
+
 
         // Subscribing to the channel
         try {
