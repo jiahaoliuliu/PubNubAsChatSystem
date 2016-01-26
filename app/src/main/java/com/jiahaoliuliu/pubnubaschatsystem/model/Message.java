@@ -1,9 +1,18 @@
 package com.jiahaoliuliu.pubnubaschatsystem.model;
 
+import android.util.Log;
+
+import com.google.gson.Gson;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
- * Created by Jiahao on 1/26/16.
+ * @author <a href="mailto:jiahaoliuliu@gmail.com">Jiahao Liu Liu</a>
  */
 public class Message {
+
+    private static final String TAG = "Message";
 
     private String sender;
     private String message;
@@ -12,6 +21,7 @@ public class Message {
     }
 
     public Message(String sender, String message) {
+        this();
         this.sender = sender;
         this.message = message;
     }
