@@ -27,4 +27,7 @@ dependencies {
 
     // Pubnub
     compile 'com.pubnub:pubnub-android:3.7.5'
+
+    // Card view
+    compile 'com.android.support:cardview-v7:23.1.1'
 }
