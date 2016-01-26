@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import com.jiahaoliuliu.pubnubaschatsystem.model.Message;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,10 +41,10 @@ public class MessagesListAdapter extends RecyclerView.Adapter<MessagesListAdapte
         }
     }
 
-    public MessagesListAdapter(String deviceId, List<Message> messageList) {
+    public MessagesListAdapter(String deviceId) {
         super();
         this.mDeviceId = deviceId;
-        this.mMessagesList = messageList;
+        this.mMessagesList = new ArrayList<Message>();
     }
 
     @Override
@@ -84,7 +85,7 @@ public class MessagesListAdapter extends RecyclerView.Adapter<MessagesListAdapte
         return mMessagesList.size();
     }
 
-    public void onMessageReceived(Message message) {
+    public void onNewMessage(Message message) {
         mMessagesList.add(message);
         notifyDataSetChanged();
     }
