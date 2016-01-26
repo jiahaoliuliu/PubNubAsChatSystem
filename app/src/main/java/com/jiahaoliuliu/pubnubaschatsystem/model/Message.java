@@ -8,7 +8,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Created by Jiahao on 1/26/16.
+ * @author <a href="mailto:jiahaoliuliu@gmail.com">Jiahao Liu Liu</a>
  */
 public class Message {
 

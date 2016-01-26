@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Jiahao on 1/25/16.
+ * @author <a href="mailto:jiahaoliuliu@gmail.com">Jiahao Liu Liu</a>
  */
 public class MessagesListAdapter extends RecyclerView.Adapter<MessagesListAdapter.ViewHolder> {
 

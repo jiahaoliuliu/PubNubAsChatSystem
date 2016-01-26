@@ -26,9 +26,9 @@ import com.pubnub.api.PubnubException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * @author <a href="mailto:jiahaoliuliu@gmail.com">Jiahao Liu Liu</a>
+ */
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
@@ -206,31 +206,5 @@ public class MainActivity extends AppCompatActivity {
                         mGson.toJson(messageToBeSent) + ". ");
             }
         });
-    }
-
-    private List<Message> createSimulatedMesages() {
-        List<Message> simulatedMessages = new ArrayList<Message>();
-
-        // Simulate sent message
-        Message sentMessage = new Message();
-        sentMessage.setSender(mDeviceId);
-        sentMessage.setMessage("This is a sent message");
-
-        // Simulate received message
-        Message receivedMessage = new Message();
-        receivedMessage.setSender("AnotherSender");
-        receivedMessage.setMessage("This is a received message");
-
-        simulatedMessages.add(sentMessage);
-        simulatedMessages.add(receivedMessage);
-        simulatedMessages.add(sentMessage);
-        simulatedMessages.add(receivedMessage);
-        simulatedMessages.add(receivedMessage);
-        simulatedMessages.add(receivedMessage);
-        simulatedMessages.add(sentMessage);
-        simulatedMessages.add(sentMessage);
-        simulatedMessages.add(receivedMessage);
-
-        return simulatedMessages;
     }
 }
