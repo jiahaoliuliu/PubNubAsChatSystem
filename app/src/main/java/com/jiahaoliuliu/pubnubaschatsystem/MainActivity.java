@@ -15,8 +15,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.jiahaoliuliu.pubnubaschatsystem.model.Message;
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
@@ -47,7 +45,6 @@ public class MainActivity extends AppCompatActivity {
     private MessagesListAdapter mMessagesListAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
     private String mDeviceId;
-    private Gson mGson;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +66,6 @@ public class MainActivity extends AppCompatActivity {
         mLayoutManager = new LinearLayoutManager(this);
         mMessagesListRecyclerView.setLayoutManager(mLayoutManager);
         mDeviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        mGson = new Gson();
 
         //      Specify an adapter
         mMessagesListAdapter = new MessagesListAdapter(mDeviceId);
@@ -82,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
                 public void successCallback(String channel, Object message) {
                     Log.v(TAG, "Message received from channel " + channel + ": " + message);
                     try {
-                        final Message receivedMessage = mGson.fromJson(message.toString(), Message.class);
+                        final Message receivedMessage = new Message(message.toString());
 
                         // Do not display our own message
                         if (receivedMessage.getSender() != null && receivedMessage.getSender().equals(mDeviceId)) {
@@ -96,8 +92,8 @@ public class MainActivity extends AppCompatActivity {
                                 mMessagesListRecyclerView.scrollToPosition(mMessagesListAdapter.getItemCount());
                             }
                         });
-                    } catch (JsonSyntaxException exception) {
-                        Log.e(TAG, "Error pasing the received message " + message, exception);
+                    } catch (IllegalArgumentException exception) {
+                        Log.e(TAG, "Error parsing the received message " + message, exception);
                     }
                 }
 
@@ -130,28 +126,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.menu_main, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
-
     private View.OnClickListener mOnClickListener = new View.OnClickListener(){
         @Override
         public void onClick(View view) {
@@ -175,16 +149,8 @@ public class MainActivity extends AppCompatActivity {
         messageToBeSent.setMessage(message);
         messageToBeSent.setSender(mDeviceId);
 
-        JSONObject messageToBeSentJson = null;
-        try {
-            messageToBeSentJson = new JSONObject(mGson.toJson(messageToBeSent));
-        } catch (JSONException e) {
-            Log.e(TAG, "Error parsing the message to be sent to json", e);
-            return;
-        }
-
-        Log.v(TAG, "Message to be published \"" + messageToBeSentJson + "\"");
-        mPubNub.publish(DEFAULT_CHANNEL_NAME, messageToBeSentJson, new Callback() {
+        Log.d(TAG, "Creating the json file for the message " + messageToBeSent.toJsonObject());
+        mPubNub.publish(DEFAULT_CHANNEL_NAME, messageToBeSent.toJsonObject(), new Callback() {
             @Override
             public void successCallback(String channel, Object message) {
                 Log.v(TAG, "Message sent correctly " + message);
@@ -202,8 +168,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void errorCallback(String channel, PubnubError error) {
                 Log.e(TAG, "Error sending the message (" + error.errorCode + "):" +
-                        error.getErrorString() + ". The content is " +
-                        mGson.toJson(messageToBeSent) + ". ");
+                        error.getErrorString() + ". The content is " + messageToBeSent.toJsonObject());
             }
         });
     }
