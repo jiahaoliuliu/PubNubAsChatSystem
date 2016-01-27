@@ -32,6 +32,11 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String DEFAULT_CHANNEL_NAME = "PubNubDefaultChannel";
 
+    /**
+     * The default number of messages. By default the maximum is 100
+     */
+    private static final int DEFAULT_HISTORICAL_MESSAGES = 100;
+
     // Views
     private CoordinatorLayout mCoordinatorLayout;
     private RecyclerView mMessagesListRecyclerView;
@@ -102,6 +107,18 @@ public class MainActivity extends AppCompatActivity {
 
         mContext.startService(startRegistrationIntentServiceIntent);
 
+        // Get the historical data from the channel
+        mPubNub.history(DEFAULT_CHANNEL_NAME, DEFAULT_HISTORICAL_MESSAGES, new Callback(){
+            @Override
+            public void successCallback(String channel, Object message) {
+                Log.v(TAG, "Correctly retrieved the historical messages " + message);
+            }
+
+            @Override
+            public void errorCallback(String channel, PubnubError error) {
+                Log.v(TAG, "Error retrieving the historical messages(" + error.errorCode + "):" + error.getErrorString());
+            }
+        });
 
         // Subscribing to the channel
         try {
@@ -109,24 +126,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void successCallback(String channel, Object message) {
                     Log.v(TAG, "Message received from channel " + channel + ": " + message);
-                    try {
-                        final Message receivedMessage = new Message(message.toString());
-
-                        // Do not display our own message
-                        if (receivedMessage.getSender() != null && receivedMessage.getSender().equals(mDeviceId)) {
-                            return;
-                        }
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mMessagesListAdapter.onNewMessage(receivedMessage);
-                                //Scroll to the last position
-                                mMessagesListRecyclerView.scrollToPosition(mMessagesListAdapter.getItemCount());
-                            }
-                        });
-                    } catch (IllegalArgumentException exception) {
-                        Log.e(TAG, "Error parsing the received message " + message, exception);
-                    }
+                    onNewMessageReceived(message.toString());
                 }
 
                 @Override
@@ -169,6 +169,27 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private void onNewMessageReceived(String messageJson) {
+        try {
+            final Message receivedMessage = new Message(messageJson);
+
+            // Do not display our own message
+            if (receivedMessage.getSender() != null && receivedMessage.getSender().equals(mDeviceId)) {
+                return;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mMessagesListAdapter.onNewMessage(receivedMessage);
+                    //Scroll to the last position
+                    mMessagesListRecyclerView.scrollToPosition(mMessagesListAdapter.getItemCount());
+                }
+            });
+        } catch (IllegalArgumentException exception) {
+            Log.e(TAG, "Error parsing the received message " + messageJson, exception);
+        }
+    }
+
     private void sendMessage() {
         // Check the content of the message
         String message = mMessageEditText.getText().toString();
@@ -204,4 +225,5 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
 }
