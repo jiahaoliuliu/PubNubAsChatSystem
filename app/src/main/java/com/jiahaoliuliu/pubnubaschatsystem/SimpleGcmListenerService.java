@@ -2,23 +2,18 @@ package com.jiahaoliuliu.pubnubaschatsystem;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.app.NotificationCompat;
+import android.provider.Settings;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
-import android.widget.RemoteViews;
 
 import com.google.android.gms.gcm.GcmListenerService;
-
-import org.json.JSONException;
+import com.jiahaoliuliu.pubnubaschatsystem.model.Message;
 
 /**
  *
@@ -47,6 +42,55 @@ public class SimpleGcmListenerService extends GcmListenerService {
             return;
         }
 
+        // Check if the message is valid
+        if (!data.containsKey(Message.JSON_FIELD_MESSAGE_KEY) || !data.containsKey(Message.JSON_FIELD_SENDER_KEY)) {
+            Log.e(TAG, "The message received is not valid " + data);
+            return;
+        }
 
+        // Parse the message
+        Message messageReceived = new Message();
+        messageReceived.setSender(data.getString(Message.JSON_FIELD_SENDER_KEY));
+        messageReceived.setMessage(data.getString(Message.JSON_FIELD_MESSAGE_KEY));
+
+        // Discard your own message
+        String deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (deviceId.equals(messageReceived.getSender())) {
+            Log.v(TAG, "Received its own message push notifications. Do not do anything");
+            return;
+        }
+
+        // Display the notifications
+        displayNotifications(messageReceived);
+    }
+
+    private void displayNotifications(Message message) {
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle(getApplicationContext().getString(R.string.push_notification_title))
+                        .setContentText(message.getMessage());
+        // Creates an explicit intent for an Activity in your app
+        Intent resultIntent = new Intent(this, MainActivity.class);
+
+        // The stack builder object will contain an artificial back stack for the
+        // started Activity.
+        // This ensures that navigating backward from the Activity leads out of
+        // your application to the Home screen.
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        // Adds the back stack for the Intent (but not the Intent itself)
+        stackBuilder.addParentStack(MainActivity.class);
+        // Adds the Intent that starts the Activity to the top of the stack
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent =
+                stackBuilder.getPendingIntent(
+                        0,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+        mBuilder.setContentIntent(resultPendingIntent);
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        // mId allows you to update the notification later on.
+        mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
     }
 }

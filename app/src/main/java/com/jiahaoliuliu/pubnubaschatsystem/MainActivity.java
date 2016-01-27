@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    private static final String DEFAULT_CHANNEL_NAME = "PubNubDefaultChannel";
+    private static final String DEFAULT_CHANNEL_NAME = "PubNubDefaultChannel1";
 
     /**
      * The default number of messages. By default the maximum is 100
