@@ -46,5 +46,7 @@ public class SimpleGcmListenerService extends GcmListenerService {
             Log.v(TAG, "The current application is in foreground. Not displaying the push notification");
             return;
         }
+
+
     }
 }
