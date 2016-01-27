@@ -1,7 +1,9 @@
 package com.jiahaoliuliu.pubnubaschatsystem;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.ResultReceiver;
 import android.provider.Settings;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
@@ -15,16 +17,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.jiahaoliuliu.pubnubaschatsystem.model.Message;
+import com.jiahaoliuliu.pubnubaschatsystem.model.MessagesHistory;
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
 import com.pubnub.api.PubnubError;
 import com.pubnub.api.PubnubException;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * @author <a href="mailto:jiahaoliuliu@gmail.com">Jiahao Liu Liu</a>
@@ -33,7 +31,12 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    private static final String DEFAULT_CHANNEL_NAME = "PubNubDefaultChannel";
+    private static final String DEFAULT_CHANNEL_NAME = "PubNubDefaultChannel1";
+
+    /**
+     * The default number of messages. By default the maximum is 100
+     */
+    private static final int DEFAULT_HISTORICAL_MESSAGES = 100;
 
     // Views
     private CoordinatorLayout mCoordinatorLayout;
@@ -47,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
     private MessagesListAdapter mMessagesListAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
     private String mDeviceId;
-    private Gson mGson;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,11 +71,64 @@ public class MainActivity extends AppCompatActivity {
         mLayoutManager = new LinearLayoutManager(this);
         mMessagesListRecyclerView.setLayoutManager(mLayoutManager);
         mDeviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        mGson = new Gson();
 
         //      Specify an adapter
         mMessagesListAdapter = new MessagesListAdapter(mDeviceId);
         mMessagesListRecyclerView.setAdapter(mMessagesListAdapter);
+
+        // Trying to enable the gcm token for the default channel
+        // Ask the gcm server for the token
+        Intent startRegistrationIntentServiceIntent = new Intent(mContext, RegistrationIntentService.class);
+        startRegistrationIntentServiceIntent.putExtra(
+                RegistrationIntentService.INTENT_KEY_UPDATE_SERVER_TOKEN_CALLBACK, new ResultReceiver(null) {
+                    @Override
+                    protected void onReceiveResult(int resultCode, Bundle resultData) {
+                        if (resultData == null) {
+                            Log.e(TAG, "Error getting gcm tokens. The result data is null");
+                            return;
+                        }
+                        String gcmToken = resultData.getString(RegistrationIntentService.BUNDLE_KEY_GCM_TOKEN);
+                        Log.v(TAG, "Token received " + gcmToken);
+
+                        mPubNub.enablePushNotificationsOnChannel(DEFAULT_CHANNEL_NAME, gcmToken, new Callback() {
+                            @Override
+                            public void successCallback(String channel, Object message) {
+                                Log.v(TAG, "GCM token correctly registered with the channel");
+                            }
+
+                            @Override
+                            public void errorCallback(String channel, PubnubError error) {
+                                Log.e(TAG, "Error registering the gcm token with the channel(" + error.errorCode + "):" +
+                                    error.getErrorString());
+                            }
+                        });
+
+                    }
+                });
+
+        mContext.startService(startRegistrationIntentServiceIntent);
+
+        // Get the historical data from the channel
+        mPubNub.history(DEFAULT_CHANNEL_NAME, DEFAULT_HISTORICAL_MESSAGES, new Callback(){
+            @Override
+            public void successCallback(String channel, Object historicalMessages) {
+                Log.v(TAG, "Correctly retrieved the historical messages " + historicalMessages);
+                try {
+                    // Parsing the historical messages
+                    MessagesHistory messagesHistory = new MessagesHistory(historicalMessages.toString());
+                    for (Message messageReceived : messagesHistory.getMessagesList()) {
+                        onNewMessageReceived(messageReceived, false);
+                    }
+                } catch (IllegalArgumentException exception) {
+                    Log.e(TAG, "Error parsing the historical messages. It is not valid. " + historicalMessages.toString());
+                }
+            }
+
+            @Override
+            public void errorCallback(String channel, PubnubError error) {
+                Log.v(TAG, "Error retrieving the historical messages(" + error.errorCode + "):" + error.getErrorString());
+            }
+        });
 
         // Subscribing to the channel
         try {
@@ -81,24 +136,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void successCallback(String channel, Object message) {
                     Log.v(TAG, "Message received from channel " + channel + ": " + message);
-                    try {
-                        final Message receivedMessage = mGson.fromJson(message.toString(), Message.class);
-
-                        // Do not display our own message
-                        if (receivedMessage.getSender() != null && receivedMessage.getSender().equals(mDeviceId)) {
-                            return;
-                        }
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mMessagesListAdapter.onNewMessage(receivedMessage);
-                                //Scroll to the last position
-                                mMessagesListRecyclerView.scrollToPosition(mMessagesListAdapter.getItemCount());
-                            }
-                        });
-                    } catch (JsonSyntaxException exception) {
-                        Log.e(TAG, "Error pasing the received message " + message, exception);
-                    }
+                    onNewMessageReceived(message.toString(), true);
                 }
 
                 @Override
@@ -130,28 +168,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.menu_main, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
-
     private View.OnClickListener mOnClickListener = new View.OnClickListener(){
         @Override
         public void onClick(View view) {
@@ -162,6 +178,36 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    private void onNewMessageReceived(String messageJson, boolean isHistoricalMessage) {
+        try {
+            final Message receivedMessage = new Message(messageJson);
+            onNewMessageReceived(receivedMessage, isHistoricalMessage);
+        } catch (IllegalArgumentException exception) {
+            Log.e(TAG, "Error parsing the received message " + messageJson, exception);
+        }
+    }
+
+    private void onNewMessageReceived(final Message message, boolean isHistoricalMessage) {
+        if (message == null || !message.isValid()) {
+            Log.w(TAG, "The received message is not valid");
+            return;
+        }
+
+        // Do not display our own message
+        if (isHistoricalMessage && mDeviceId.equals(message.getSender())) {
+            return;
+        }
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mMessagesListAdapter.onNewMessage(message);
+                //Scroll to the last position
+                mMessagesListRecyclerView.scrollToPosition(mMessagesListAdapter.getItemCount());
+            }
+        });
+    }
 
     private void sendMessage() {
         // Check the content of the message
@@ -175,16 +221,8 @@ public class MainActivity extends AppCompatActivity {
         messageToBeSent.setMessage(message);
         messageToBeSent.setSender(mDeviceId);
 
-        JSONObject messageToBeSentJson = null;
-        try {
-            messageToBeSentJson = new JSONObject(mGson.toJson(messageToBeSent));
-        } catch (JSONException e) {
-            Log.e(TAG, "Error parsing the message to be sent to json", e);
-            return;
-        }
-
-        Log.v(TAG, "Message to be published \"" + messageToBeSentJson + "\"");
-        mPubNub.publish(DEFAULT_CHANNEL_NAME, messageToBeSentJson, new Callback() {
+        Log.d(TAG, "Creating the json file for the message " + messageToBeSent.toJsonObject());
+        mPubNub.publish(DEFAULT_CHANNEL_NAME, messageToBeSent.toJsonObject(), new Callback() {
             @Override
             public void successCallback(String channel, Object message) {
                 Log.v(TAG, "Message sent correctly " + message);
@@ -202,9 +240,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void errorCallback(String channel, PubnubError error) {
                 Log.e(TAG, "Error sending the message (" + error.errorCode + "):" +
-                        error.getErrorString() + ". The content is " +
-                        mGson.toJson(messageToBeSent) + ". ");
+                        error.getErrorString() + ". The content is " + messageToBeSent.toJsonObject());
             }
         });
     }
+
 }

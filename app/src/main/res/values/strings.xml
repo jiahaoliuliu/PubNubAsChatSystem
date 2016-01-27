@@ -3,4 +3,5 @@
     <string name="action_settings">Settings</string>
     <string name="sendMessage">Send</string>
     <string name="error_empty_message">The message cannot be empty</string>
+    <string name="push_notification_title">New message received!</string>
 </resources>
