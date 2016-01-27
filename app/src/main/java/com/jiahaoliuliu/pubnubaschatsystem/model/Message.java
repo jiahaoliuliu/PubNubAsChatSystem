@@ -1,9 +1,11 @@
 package com.jiahaoliuliu.pubnubaschatsystem.model;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 /**
  * @author <a href="mailto:jiahaoliuliu@gmail.com">Jiahao Liu Liu</a>
@@ -46,6 +48,15 @@ public class Message {
         this();
         this.sender = sender;
         this.message = message;
+    }
+
+    /**
+     * Check if the current message is valid
+     * @return
+     */
+    public boolean isValid() {
+        return !TextUtils.isEmpty(getSender()) &&
+                !TextUtils.isEmpty(getMessage());
     }
 
     public String getSender() {
